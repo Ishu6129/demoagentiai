@@ -1,76 +1,101 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AgentModuleCard } from './AgentModuleCard';
 import { Badge } from '@/components/ui/badge';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Cog, FileCode, FileText, Search } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Cog, FileCode, FileText, Search, ChevronDown } from 'lucide-react';
 import { ExecutorOutput } from '@/types/agent';
 import { cn } from '@/lib/utils';
+import { useState } from 'react';
 
 interface ExecutorCardProps {
   outputs: ExecutorOutput[];
   isActive: boolean;
+  isComplete: boolean;
+  isPending: boolean;
 }
 
 function OutputTypeIcon({ type }: { type: ExecutorOutput['type'] }) {
   switch (type) {
     case 'code':
-      return <FileCode className="h-4 w-4 text-purple-500" />;
+      return <FileCode className="h-4 w-4 text-agent-refiner" />;
     case 'analysis':
-      return <Search className="h-4 w-4 text-blue-500" />;
+      return <Search className="h-4 w-4 text-agent-planner" />;
     default:
       return <FileText className="h-4 w-4 text-muted-foreground" />;
   }
 }
 
-export function ExecutorCard({ outputs, isActive }: ExecutorCardProps) {
-  if (outputs.length === 0) return null;
+function TaskOutput({ output, isLatest }: { output: ExecutorOutput; isLatest: boolean }) {
+  const [isOpen, setIsOpen] = useState(isLatest);
 
   return (
-    <Card className={cn(
-      "transition-all duration-300",
-      isActive && "ring-2 ring-yellow-500 shadow-lg shadow-yellow-500/20"
-    )}>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Cog className={cn("h-5 w-5 text-yellow-500", isActive && "animate-spin")} />
-            Executor Module
-          </CardTitle>
-          <Badge variant={isActive ? "default" : "secondary"} className={cn(
-            isActive && "bg-yellow-500 hover:bg-yellow-600 text-black"
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <div className={cn(
+        "rounded-lg border transition-all",
+        isLatest && isOpen && "border-agent-executor/30 bg-agent-executor/5",
+        !isLatest && "border-border"
+      )}>
+        <CollapsibleTrigger className="w-full p-3 flex items-center justify-between hover:bg-muted/50 rounded-lg transition-colors">
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold",
+              "bg-agent-executor/20 text-agent-executor"
+            )}>
+              {output.taskId}
+            </div>
+            <OutputTypeIcon type={output.type} />
+            <span className="text-sm font-medium">Task {output.taskId} Result</span>
+            <Badge variant="outline" className="text-xs">
+              {output.type}
+            </Badge>
+          </div>
+          <ChevronDown className={cn(
+            "h-4 w-4 text-muted-foreground transition-transform",
+            isOpen && "rotate-180"
+          )} />
+        </CollapsibleTrigger>
+        
+        <CollapsibleContent>
+          <div className={cn(
+            "mx-3 mb-3 rounded-lg p-4 text-sm",
+            output.type === 'code' 
+              ? "bg-secondary font-mono overflow-x-auto" 
+              : "bg-muted/50"
           )}>
-            {isActive ? `Executing Task ${outputs.length}` : `${outputs.length} Tasks Done`}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Accordion type="multiple" className="w-full" defaultValue={outputs.map(o => `task-${o.taskId}`)}>
-          {outputs.map((output) => (
-            <AccordionItem key={output.taskId} value={`task-${output.taskId}`}>
-              <AccordionTrigger className="hover:no-underline">
-                <div className="flex items-center gap-2">
-                  <OutputTypeIcon type={output.type} />
-                  <span className="text-sm font-medium">
-                    Task {output.taskId} Output
-                  </span>
-                  <Badge variant="outline" className="text-xs">
-                    {output.type}
-                  </Badge>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className={cn(
-                  "rounded-lg p-4 text-sm",
-                  output.type === 'code' 
-                    ? "bg-zinc-900 text-zinc-100 font-mono overflow-x-auto" 
-                    : "bg-muted/50"
-                )}>
-                  <pre className="whitespace-pre-wrap">{output.result}</pre>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
+            <pre className="whitespace-pre-wrap">{output.result}</pre>
+          </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
+  );
+}
+
+export function ExecutorCard({ outputs, isActive, isComplete, isPending }: ExecutorCardProps) {
+  return (
+    <AgentModuleCard
+      title="Executor Module"
+      icon={<Cog className={cn("h-5 w-5 text-agent-executor", isActive && "animate-spin")} />}
+      color="executor"
+      isActive={isActive}
+      isComplete={isComplete}
+      isPending={isPending}
+      processingLabel={`Executing task ${outputs.length + 1}...`}
+      statusLabel={`${outputs.length} executed`}
+    >
+      {outputs.length > 0 ? (
+        <div className="space-y-3">
+          {outputs.map((output, idx) => (
+            <TaskOutput 
+              key={output.taskId} 
+              output={output} 
+              isLatest={idx === outputs.length - 1 && isActive}
+            />
           ))}
-        </Accordion>
-      </CardContent>
-    </Card>
+        </div>
+      ) : (
+        <div className="h-24 flex items-center justify-center text-muted-foreground text-sm">
+          Waiting for planner to complete...
+        </div>
+      )}
+    </AgentModuleCard>
   );
 }
