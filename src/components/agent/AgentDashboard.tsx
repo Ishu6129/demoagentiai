@@ -6,6 +6,8 @@ import { ExecutorCard } from './ExecutorCard';
 import { CriticCard } from './CriticCard';
 import { RefinementCard } from './RefinementCard';
 import { MemoryPanel } from './MemoryPanel';
+import { FinalOutputCard } from './FinalOutputCard';
+import { ModuleConnector } from './ModuleConnector';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,6 +25,31 @@ export function AgentDashboard() {
     exampleGoals
   } = useAgent();
 
+  const getPhaseIndex = (phase: string) => {
+    const phases = ['idle', 'planning', 'executing', 'critiquing', 'refining', 'complete'];
+    return phases.indexOf(phase);
+  };
+
+  const currentPhaseIndex = getPhaseIndex(state.phase);
+
+  const isModuleComplete = (modulePhase: string) => {
+    return getPhaseIndex(state.phase) > getPhaseIndex(modulePhase);
+  };
+
+  const isModuleActive = (modulePhase: string) => {
+    return state.phase === modulePhase;
+  };
+
+  const isModulePending = (modulePhase: string) => {
+    return getPhaseIndex(state.phase) < getPhaseIndex(modulePhase);
+  };
+
+  // Determine goal type for final output
+  const goalType = state.goal.toLowerCase().includes('internship') || 
+                   state.goal.toLowerCase().includes('fake') ||
+                   state.goal.toLowerCase().includes('legitimate')
+                   ? 'internship' : 'fibonacci';
+
   return (
     <div className="flex h-full gap-6">
       {/* Main Content */}
@@ -36,7 +63,7 @@ export function AgentDashboard() {
 
         {/* Current Goal Display */}
         {state.goal && (
-          <Card>
+          <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-base">
@@ -44,8 +71,8 @@ export function AgentDashboard() {
                   Current Goal
                 </CardTitle>
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary">
-                    {state.phase === 'idle' ? 'Ready' : state.phase}
+                  <Badge variant="secondary" className="capitalize">
+                    {state.phase === 'idle' ? 'Ready' : state.phase === 'complete' ? '✓ Complete' : `${state.phase}...`}
                   </Badge>
                   {state.phase === 'complete' && (
                     <Button variant="ghost" size="sm" onClick={reset}>
@@ -57,7 +84,7 @@ export function AgentDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground italic">
+              <p className="text-sm font-medium">
                 "{state.goal}"
               </p>
             </CardContent>
@@ -71,26 +98,63 @@ export function AgentDashboard() {
         {state.phase !== 'idle' && (
           <ScrollArea className="flex-1">
             <div className="space-y-4 pb-6">
+              {/* Planner */}
               <PlannerCard
                 output={state.plannerOutput}
-                isActive={state.phase === 'planning'}
+                isActive={isModuleActive('planning')}
+                isComplete={isModuleComplete('planning')}
+                isPending={isModulePending('planning')}
               />
 
+              <ModuleConnector 
+                isActive={isModuleActive('executing')} 
+                isComplete={isModuleComplete('executing')} 
+              />
+
+              {/* Executor */}
               <ExecutorCard
                 outputs={state.executorOutputs}
-                isActive={state.phase === 'executing'}
+                isActive={isModuleActive('executing')}
+                isComplete={isModuleComplete('executing')}
+                isPending={isModulePending('executing')}
               />
 
+              <ModuleConnector 
+                isActive={isModuleActive('critiquing')} 
+                isComplete={isModuleComplete('critiquing')} 
+              />
+
+              {/* Critic */}
               <CriticCard
                 output={state.criticOutput}
-                isActive={state.phase === 'critiquing'}
+                isActive={isModuleActive('critiquing')}
+                isComplete={isModuleComplete('critiquing')}
+                isPending={isModulePending('critiquing')}
               />
 
+              <ModuleConnector 
+                isActive={isModuleActive('refining')} 
+                isComplete={isModuleComplete('refining')} 
+              />
+
+              {/* Refiner */}
               <RefinementCard
                 output={state.refinementOutput}
-                isActive={state.phase === 'refining'}
-                isComplete={state.phase === 'complete'}
+                isActive={isModuleActive('refining')}
+                isComplete={isModuleComplete('refining')}
+                isPending={isModulePending('refining')}
               />
+
+              {/* Final Output */}
+              {state.phase === 'complete' && state.refinementOutput && (
+                <>
+                  <ModuleConnector isComplete={true} />
+                  <FinalOutputCard 
+                    output={state.refinementOutput} 
+                    goalType={goalType}
+                  />
+                </>
+              )}
             </div>
           </ScrollArea>
         )}

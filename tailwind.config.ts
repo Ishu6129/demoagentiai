@@ -47,6 +47,13 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        agent: {
+          planner: "hsl(var(--agent-planner))",
+          executor: "hsl(var(--agent-executor))",
+          critic: "hsl(var(--agent-critic))",
+          refiner: "hsl(var(--agent-refiner))",
+          complete: "hsl(var(--agent-complete))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -88,11 +95,22 @@ export default {
             transform: "rotate(360deg)",
           },
         },
+        "pulse-ring": {
+          "0%": { transform: "scale(1)", opacity: "1" },
+          "50%": { transform: "scale(1.05)", opacity: "0.8" },
+          "100%": { transform: "scale(1)", opacity: "1" },
+        },
+        "flow-line": {
+          "0%": { backgroundPosition: "0% 50%" },
+          "100%": { backgroundPosition: "200% 50%" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "spin-slow": "spin-slow 3s linear infinite",
+        "pulse-ring": "pulse-ring 2s ease-in-out infinite",
+        "flow-line": "flow-line 2s linear infinite",
       },
     },
   },
