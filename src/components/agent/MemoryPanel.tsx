@@ -51,26 +51,26 @@ export function MemoryPanel({ memory, onClear }: MemoryPanelProps) {
               {memory.map((entry) => (
                 <div
                   key={entry.id}
-                  className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                  className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer group"
                 >
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <Badge variant="outline" className={cn(
-                      "text-xs",
-                      entry.phase === 'complete' && "border-green-500 text-green-500"
+                      "text-xs shrink-0",
+                      entry.phase === 'complete' && "border-agent-complete text-agent-complete bg-agent-complete/10"
                     )}>
-                      {entry.phase}
+                      ✓ Complete
                     </Badge>
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
                       <Clock className="h-3 w-3" />
                       {formatTime(entry.timestamp)}
                     </span>
                   </div>
-                  <p className="text-sm font-medium line-clamp-2">
+                  <p className="text-sm font-medium line-clamp-2 mb-2">
                     {entry.goal}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <div className="text-xs bg-muted/50 rounded px-2 py-1.5 border-l-2 border-agent-complete">
                     {entry.result}
-                  </p>
+                  </div>
                 </div>
               ))}
             </div>
