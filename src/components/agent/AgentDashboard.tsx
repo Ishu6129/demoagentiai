@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useWorkflow } from '@/hooks/useWorkflow';
 import { GoalInput } from './GoalInput';
 import { PhaseIndicator } from './PhaseIndicator';
@@ -17,6 +18,8 @@ import { Target, RotateCcw, Workflow, Eye } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export function AgentDashboard() {
+  const [activeTab, setActiveTab] = useState('workflow');
+  
   const {
     agents,
     setAgents,
@@ -29,6 +32,19 @@ export function AgentDashboard() {
     clearMemory,
     exampleGoals
   } = useWorkflow();
+
+  // Auto-switch to output tab when processing starts
+  useEffect(() => {
+    if (state.phase !== 'idle') {
+      setActiveTab('output');
+    }
+  }, [state.phase]);
+
+  // Reset to workflow tab when reset
+  const handleReset = () => {
+    reset();
+    setActiveTab('workflow');
+  };
 
   const getPhaseIndex = (phase: string) => {
     const phases = ['idle', 'planning', 'executing', 'critiquing', 'refining', 'complete'];
@@ -70,7 +86,7 @@ export function AgentDashboard() {
         />
 
         {/* Workflow Builder & Output Tabs */}
-        <Tabs defaultValue="workflow" className="flex-1 flex flex-col">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
           <TabsList className="w-fit">
             <TabsTrigger value="workflow" className="gap-2">
               <Workflow className="h-4 w-4" />
@@ -81,7 +97,7 @@ export function AgentDashboard() {
               Agent Output
               {hasStarted && (
                 <Badge variant="secondary" className="ml-1 text-xs capitalize">
-                  {state.phase === 'complete' ? '✓' : '...'}
+                  {state.phase === 'complete' ? '✓ Done' : isProcessing ? '● Live' : '...'}
                 </Badge>
               )}
             </TabsTrigger>
@@ -94,7 +110,7 @@ export function AgentDashboard() {
               currentPhase={state.phase}
               onAgentsChange={setAgents}
               onRun={() => {}}
-              onReset={reset}
+              onReset={handleReset}
               isProcessing={isProcessing}
               goal={state.goal || undefined}
             />
@@ -118,7 +134,7 @@ export function AgentDashboard() {
                             {state.phase === 'complete' ? '✓ Complete' : `${state.phase}...`}
                           </Badge>
                           {state.phase === 'complete' && (
-                            <Button variant="ghost" size="sm" onClick={reset}>
+                            <Button variant="ghost" size="sm" onClick={handleReset}>
                               <RotateCcw className="h-4 w-4 mr-1" />
                               New Goal
                             </Button>
