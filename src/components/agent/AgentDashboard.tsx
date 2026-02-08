@@ -1,21 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useWorkflow } from '@/hooks/useWorkflow';
+import { usePersistedWorkflow } from '@/hooks/usePersistedWorkflow';
 import { GoalInput } from './GoalInput';
-import { PhaseIndicator } from './PhaseIndicator';
-import { PlannerCard } from './PlannerCard';
-import { ExecutorCard } from './ExecutorCard';
-import { CriticCard } from './CriticCard';
-import { RefinementCard } from './RefinementCard';
 import { MemoryPanel } from './MemoryPanel';
-import { FinalOutputCard } from './FinalOutputCard';
-import { ModuleConnector } from './ModuleConnector';
 import { WorkflowBuilder } from '@/components/workflow/WorkflowBuilder';
+import { ChatOutput } from '@/components/chat/ChatOutput';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Target, RotateCcw, Workflow, Eye } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Target, RotateCcw, Workflow, MessageSquare, Sparkles } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export function AgentDashboard() {
   const [activeTab, setActiveTab] = useState('workflow');
@@ -31,7 +25,10 @@ export function AgentDashboard() {
     reset,
     clearMemory,
     exampleGoals
-  } = useWorkflow();
+  } = usePersistedWorkflow();
+
+  // Get enabled agent types for ChatOutput
+  const enabledAgentTypes = agents.filter(a => a.enabled).map(a => a.type);
 
   // Auto-switch to output tab when processing starts
   useEffect(() => {
@@ -46,39 +43,13 @@ export function AgentDashboard() {
     setActiveTab('workflow');
   };
 
-  const getPhaseIndex = (phase: string) => {
-    const phases = ['idle', 'planning', 'executing', 'critiquing', 'refining', 'complete'];
-    return phases.indexOf(phase);
-  };
-
-  const isModuleComplete = (modulePhase: string) => {
-    return getPhaseIndex(state.phase) > getPhaseIndex(modulePhase);
-  };
-
-  const isModuleActive = (modulePhase: string) => {
-    return state.phase === modulePhase;
-  };
-
-  const isModulePending = (modulePhase: string) => {
-    return getPhaseIndex(state.phase) < getPhaseIndex(modulePhase);
-  };
-
-  const isAgentEnabled = (type: string) => {
-    return agents.find(a => a.type === type)?.enabled ?? false;
-  };
-
-  const goalType = state.goal.toLowerCase().includes('internship') || 
-                   state.goal.toLowerCase().includes('fake') ||
-                   state.goal.toLowerCase().includes('legitimate')
-                   ? 'internship' : 'fibonacci';
-
   const hasStarted = state.phase !== 'idle';
 
   return (
     <div className="flex h-full gap-6">
       {/* Main Content */}
-      <div className="flex-1 flex flex-col gap-6 min-w-0">
-        {/* Goal Input */}
+      <div className="flex-1 flex flex-col gap-4 min-w-0">
+        {/* Goal Input - Always visible */}
         <GoalInput
           onSubmit={processGoal}
           isProcessing={isProcessing}
@@ -87,21 +58,40 @@ export function AgentDashboard() {
 
         {/* Workflow Builder & Output Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-          <TabsList className="w-fit">
-            <TabsTrigger value="workflow" className="gap-2">
-              <Workflow className="h-4 w-4" />
-              Workflow Builder
-            </TabsTrigger>
-            <TabsTrigger value="output" className="gap-2" disabled={!hasStarted}>
-              <Eye className="h-4 w-4" />
-              Agent Output
-              {hasStarted && (
-                <Badge variant="secondary" className="ml-1 text-xs capitalize">
-                  {state.phase === 'complete' ? '✓ Done' : isProcessing ? '● Live' : '...'}
-                </Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between">
+            <TabsList className="bg-muted/50">
+              <TabsTrigger value="workflow" className="gap-2 data-[state=active]:bg-background">
+                <Workflow className="h-4 w-4" />
+                Pipeline
+              </TabsTrigger>
+              <TabsTrigger 
+                value="output" 
+                className="gap-2 data-[state=active]:bg-background" 
+                disabled={!hasStarted}
+              >
+                <MessageSquare className="h-4 w-4" />
+                Output
+                {hasStarted && (
+                  <Badge 
+                    variant="secondary" 
+                    className={cn(
+                      "ml-1 text-xs",
+                      isProcessing && "animate-pulse bg-primary/20 text-primary"
+                    )}
+                  >
+                    {state.phase === 'complete' ? '✓' : '●'}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+
+            {hasStarted && (
+              <Button variant="outline" size="sm" onClick={handleReset} className="gap-2">
+                <RotateCcw className="h-4 w-4" />
+                New Task
+              </Button>
+            )}
+          </div>
 
           {/* Workflow Builder Tab */}
           <TabsContent value="workflow" className="flex-1 mt-4">
@@ -116,138 +106,52 @@ export function AgentDashboard() {
             />
           </TabsContent>
 
-          {/* Agent Output Tab */}
+          {/* Agent Output Tab - ChatGPT-like */}
           <TabsContent value="output" className="flex-1 mt-4">
             {hasStarted && (
-              <div className="space-y-4">
-                {/* Current Goal Display */}
+              <Card className="h-full border-0 shadow-none bg-transparent">
+                {/* Current Goal Header */}
                 {state.goal && (
-                  <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="flex items-center gap-2 text-base">
-                          <Target className="h-5 w-5 text-primary" />
-                          Current Goal
-                        </CardTitle>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="capitalize">
-                            {state.phase === 'complete' ? '✓ Complete' : `${state.phase}...`}
-                          </Badge>
-                          {state.phase === 'complete' && (
-                            <Button variant="ghost" size="sm" onClick={handleReset}>
-                              <RotateCcw className="h-4 w-4 mr-1" />
-                              New Goal
-                            </Button>
-                          )}
+                  <CardHeader className="pb-4 px-0 pt-0">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <Target className="h-4 w-4 text-primary" />
                         </div>
+                        <span className="font-medium">Task in Progress</span>
+                      </CardTitle>
+                      <div className="flex items-center gap-2">
+                        <Badge 
+                          variant="outline" 
+                          className={cn(
+                            "capitalize",
+                            state.phase === 'complete' && "border-[hsl(var(--agent-complete))] text-[hsl(var(--agent-complete))] bg-[hsl(var(--agent-complete))]/10"
+                          )}
+                        >
+                          {state.phase === 'complete' ? (
+                            <><Sparkles className="h-3 w-3 mr-1" /> Completed</>
+                          ) : (
+                            <><span className="animate-pulse mr-1">●</span> {state.phase}</>
+                          )}
+                        </Badge>
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm font-medium">"{state.goal}"</p>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </CardHeader>
                 )}
-
-                {/* Phase Indicator */}
-                <PhaseIndicator currentPhase={state.phase} />
-
-                {/* Agent Module Cards */}
-                <ScrollArea className="flex-1">
-                  <div className="space-y-4 pb-6">
-                    {/* Planner */}
-                    {isAgentEnabled('planner') && (
-                      <>
-                        <PlannerCard
-                          output={state.plannerOutput}
-                          isActive={isModuleActive('planning')}
-                          isComplete={isModuleComplete('planning')}
-                          isPending={isModulePending('planning')}
-                        />
-                        {isAgentEnabled('executor') && (
-                          <ModuleConnector 
-                            isActive={isModuleActive('executing')} 
-                            isComplete={isModuleComplete('executing')} 
-                          />
-                        )}
-                      </>
-                    )}
-
-                    {/* Executor */}
-                    {isAgentEnabled('executor') && (
-                      <>
-                        <ExecutorCard
-                          outputs={state.executorOutputs}
-                          isActive={isModuleActive('executing')}
-                          isComplete={isModuleComplete('executing')}
-                          isPending={isModulePending('executing')}
-                        />
-                        {isAgentEnabled('critic') && (
-                          <ModuleConnector 
-                            isActive={isModuleActive('critiquing')} 
-                            isComplete={isModuleComplete('critiquing')} 
-                          />
-                        )}
-                      </>
-                    )}
-
-                    {/* Critic */}
-                    {isAgentEnabled('critic') && (
-                      <>
-                        <CriticCard
-                          output={state.criticOutput}
-                          isActive={isModuleActive('critiquing')}
-                          isComplete={isModuleComplete('critiquing')}
-                          isPending={isModulePending('critiquing')}
-                        />
-                        {isAgentEnabled('refiner') && (
-                          <ModuleConnector 
-                            isActive={isModuleActive('refining')} 
-                            isComplete={isModuleComplete('refining')} 
-                          />
-                        )}
-                      </>
-                    )}
-
-                    {/* Refiner */}
-                    {isAgentEnabled('refiner') && (
-                      <RefinementCard
-                        output={state.refinementOutput}
-                        isActive={isModuleActive('refining')}
-                        isComplete={isModuleComplete('refining')}
-                        isPending={isModulePending('refining')}
-                      />
-                    )}
-
-                    {/* Final Output */}
-                    {state.phase === 'complete' && state.refinementOutput && (
-                      <>
-                        <ModuleConnector isComplete={true} />
-                        <FinalOutputCard 
-                          output={state.refinementOutput} 
-                          goalType={goalType}
-                        />
-                      </>
-                    )}
-
-                    {/* Show skipped agents notice */}
-                    {skippedAgents.length > 0 && state.phase === 'complete' && (
-                      <Card className="border-muted">
-                        <CardContent className="py-4">
-                          <p className="text-sm text-muted-foreground">
-                            Skipped agents: {skippedAgents.map(a => a.charAt(0).toUpperCase() + a.slice(1)).join(', ')}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </div>
-                </ScrollArea>
-              </div>
+                
+                <CardContent className="px-0">
+                  <ChatOutput 
+                    state={state} 
+                    enabledAgents={enabledAgentTypes}
+                  />
+                </CardContent>
+              </Card>
             )}
           </TabsContent>
         </Tabs>
       </div>
 
-      {/* Memory Panel */}
+      {/* Memory Panel - Sidebar */}
       <div className="w-80 shrink-0 hidden lg:block">
         <MemoryPanel memory={memory} onClear={clearMemory} />
       </div>
