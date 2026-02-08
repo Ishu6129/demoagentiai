@@ -6,9 +6,10 @@ import { WorkflowNode } from './WorkflowNode';
 import { WorkflowConnector } from './WorkflowConnector';
 import { AgentLibrary } from './AgentLibrary';
 import { WorkflowAgent, AgentType, DEFAULT_AGENTS } from '@/types/workflow';
-import { Play, RotateCcw, Settings2, ChevronRight, Target } from 'lucide-react';
+import { RotateCcw, Settings2, Target, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AgentPhase } from '@/types/agent';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface WorkflowBuilderProps {
   agents: WorkflowAgent[];
@@ -80,24 +81,37 @@ export function WorkflowBuilder({
   return (
     <div className="flex gap-4">
       {/* Main Workflow Canvas */}
-      <Card className="flex-1">
+      <Card className="flex-1 border-0 bg-muted/20">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Settings2 className="h-5 w-5 text-primary" />
-              Workflow Pipeline
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <div className="p-1.5 rounded-md bg-primary/10">
+                <Settings2 className="h-4 w-4 text-primary" />
+              </div>
+              Agent Pipeline
+              <Badge variant="secondary" className="text-xs">
+                {enabledAgents.length} active
+              </Badge>
             </CardTitle>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowLibrary(!showLibrary)}
-              >
-                {showLibrary ? 'Hide' : 'Add Agents'}
-              </Button>
+              {availableTypes.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowLibrary(!showLibrary)}
+                  className="gap-1.5 h-8"
+                >
+                  {showLibrary ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
+                  {showLibrary ? 'Hide' : 'Add Agent'}
+                </Button>
+              )}
               {currentPhase !== 'idle' && (
-                <Button variant="outline" size="sm" onClick={onReset}>
-                  <RotateCcw className="h-4 w-4 mr-1" />
+                <Button variant="outline" size="sm" onClick={onReset} className="h-8">
+                  <RotateCcw className="h-4 w-4 mr-1.5" />
                   Reset
                 </Button>
               )}
@@ -107,11 +121,11 @@ export function WorkflowBuilder({
         <CardContent>
           {/* Goal Display */}
           {goal && (
-            <div className="mb-6 p-3 rounded-lg bg-primary/5 border border-primary/20">
+            <div className="mb-6 p-3 rounded-xl bg-primary/5 border border-primary/20">
               <div className="flex items-center gap-2 text-sm">
-                <Target className="h-4 w-4 text-primary" />
-                <span className="font-medium">Goal:</span>
-                <span className="text-muted-foreground truncate">{goal}</span>
+                <Target className="h-4 w-4 text-primary shrink-0" />
+                <span className="font-medium text-muted-foreground">Current Goal:</span>
+                <span className="truncate font-medium">{goal}</span>
               </div>
             </div>
           )}
@@ -119,7 +133,11 @@ export function WorkflowBuilder({
           {/* Workflow Nodes */}
           <div className="flex flex-col items-center">
             {/* Start Node */}
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 border-2 border-primary text-primary font-semibold">
+            <div className={cn(
+              "flex items-center justify-center w-14 h-14 rounded-2xl border-2 font-bold text-sm transition-all",
+              "bg-gradient-to-br from-primary/10 to-primary/5 border-primary text-primary",
+              currentPhase !== 'idle' && "animate-pulse"
+            )}>
               IN
             </div>
             
@@ -130,9 +148,14 @@ export function WorkflowBuilder({
 
             {/* Agent Nodes */}
             {enabledAgents.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <p className="text-sm">No agents in pipeline</p>
-                <p className="text-xs mt-1">Add agents from the library</p>
+              <div className="text-center py-12 px-8">
+                <div className="p-4 rounded-full bg-muted/50 w-fit mx-auto mb-4">
+                  <Plus className="h-8 w-8 text-muted-foreground/50" />
+                </div>
+                <p className="text-sm font-medium text-muted-foreground">No agents in pipeline</p>
+                <p className="text-xs text-muted-foreground/70 mt-1">
+                  Click "Add Agent" to build your workflow
+                </p>
               </div>
             ) : (
               enabledAgents.map((agent, index) => (
@@ -166,10 +189,10 @@ export function WorkflowBuilder({
                 
                 {/* End Node */}
                 <div className={cn(
-                  "flex items-center justify-center w-12 h-12 rounded-full border-2 font-semibold transition-all",
+                  "flex items-center justify-center w-14 h-14 rounded-2xl border-2 font-bold text-sm transition-all",
                   currentPhase === 'complete' 
-                    ? "bg-agent-complete/10 border-agent-complete text-agent-complete" 
-                    : "bg-muted border-muted-foreground/30 text-muted-foreground"
+                    ? "bg-gradient-to-br from-[hsl(var(--agent-complete))]/20 to-[hsl(var(--agent-complete))]/5 border-[hsl(var(--agent-complete))] text-[hsl(var(--agent-complete))]" 
+                    : "bg-muted/50 border-muted-foreground/20 text-muted-foreground"
                 )}>
                   OUT
                 </div>
@@ -177,11 +200,11 @@ export function WorkflowBuilder({
             )}
           </div>
 
-          {/* Run Button */}
+          {/* Hint when no goal */}
           {enabledAgents.length > 0 && currentPhase === 'idle' && !goal && (
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
-                Enter a goal above to run the workflow
+                ↑ Enter a goal above to run this pipeline
               </p>
             </div>
           )}
@@ -189,14 +212,14 @@ export function WorkflowBuilder({
       </Card>
 
       {/* Agent Library Sidebar */}
-      {showLibrary && (
-        <div className="w-64 shrink-0">
+      <Collapsible open={showLibrary} onOpenChange={setShowLibrary}>
+        <CollapsibleContent className="w-64 shrink-0">
           <AgentLibrary
             availableAgents={availableTypes}
             onAddAgent={handleAddAgent}
           />
-        </div>
-      )}
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 }

@@ -25,32 +25,32 @@ const iconMap = {
 
 const colorStyles = {
   planner: {
-    border: 'border-agent-planner',
-    bg: 'bg-agent-planner/10',
-    text: 'text-agent-planner',
-    ring: 'ring-agent-planner',
-    shadow: 'shadow-agent-planner/30'
+    border: 'border-[hsl(var(--agent-planner))]',
+    bg: 'bg-[hsl(var(--agent-planner))]/10',
+    text: 'text-[hsl(var(--agent-planner))]',
+    ring: 'ring-[hsl(var(--agent-planner))]',
+    shadow: 'shadow-[hsl(var(--agent-planner))]/20'
   },
   executor: {
-    border: 'border-agent-executor',
-    bg: 'bg-agent-executor/10',
-    text: 'text-agent-executor',
-    ring: 'ring-agent-executor',
-    shadow: 'shadow-agent-executor/30'
+    border: 'border-[hsl(var(--agent-executor))]',
+    bg: 'bg-[hsl(var(--agent-executor))]/10',
+    text: 'text-[hsl(var(--agent-executor))]',
+    ring: 'ring-[hsl(var(--agent-executor))]',
+    shadow: 'shadow-[hsl(var(--agent-executor))]/20'
   },
   critic: {
-    border: 'border-agent-critic',
-    bg: 'bg-agent-critic/10',
-    text: 'text-agent-critic',
-    ring: 'ring-agent-critic',
-    shadow: 'shadow-agent-critic/30'
+    border: 'border-[hsl(var(--agent-critic))]',
+    bg: 'bg-[hsl(var(--agent-critic))]/10',
+    text: 'text-[hsl(var(--agent-critic))]',
+    ring: 'ring-[hsl(var(--agent-critic))]',
+    shadow: 'shadow-[hsl(var(--agent-critic))]/20'
   },
   refiner: {
-    border: 'border-agent-refiner',
-    bg: 'bg-agent-refiner/10',
-    text: 'text-agent-refiner',
-    ring: 'ring-agent-refiner',
-    shadow: 'shadow-agent-refiner/30'
+    border: 'border-[hsl(var(--agent-refiner))]',
+    bg: 'bg-[hsl(var(--agent-refiner))]/10',
+    text: 'text-[hsl(var(--agent-refiner))]',
+    ring: 'ring-[hsl(var(--agent-refiner))]',
+    shadow: 'shadow-[hsl(var(--agent-refiner))]/20'
   }
 };
 
@@ -67,10 +67,10 @@ export function WorkflowNode({
 
   return (
     <Card className={cn(
-      "relative p-4 w-48 transition-all duration-300 group",
+      "relative p-4 w-52 transition-all duration-300 group rounded-xl",
       agent.enabled ? "opacity-100" : "opacity-50",
       isActive && [colors.ring, "ring-2", "shadow-lg", colors.shadow],
-      isComplete && "border-agent-complete/50"
+      isComplete && "border-[hsl(var(--agent-complete))]/50"
     )}>
       {/* Drag Handle */}
       <div className="absolute left-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-50 cursor-grab">
@@ -104,7 +104,7 @@ export function WorkflowNode({
       
       {isComplete && !isActive && (
         <Badge 
-          className="absolute -top-2 left-1/2 -translate-x-1/2 gap-1 bg-agent-complete/10 text-agent-complete border-agent-complete/30"
+          className="absolute -top-2 left-1/2 -translate-x-1/2 gap-1 bg-[hsl(var(--agent-complete))]/10 text-[hsl(var(--agent-complete))] border-[hsl(var(--agent-complete))]/30"
         >
           <CheckCircle2 className="h-3 w-3" />
           Done
